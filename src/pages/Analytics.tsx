@@ -4,7 +4,8 @@ import { wardNames, categories } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { BarChart3, TrendingUp, PieChartIcon, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, PieChart as PieChartIcon, Activity } from "lucide-react";
+import { PageTransition } from "@/components/PageTransition";
 
 const COLORS = ["hsl(220,60%,35%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(280,65%,60%)", "hsl(0,84%,60%)"];
 
@@ -18,7 +19,7 @@ export default function Analytics() {
     })), [cases]);
 
   const statusData = useMemo(() => {
-    const s = { Pending: 0, Scheduled: 0, Cleared: 0, Reported: 0 };
+    const s: Record<string, number> = { Pending: 0, Scheduled: 0, Cleared: 0, Reported: 0 };
     cases.forEach((c) => s[c.status]++);
     return Object.entries(s).map(([name, value]) => ({ name, value }));
   }, [cases]);
@@ -39,80 +40,82 @@ export default function Analytics() {
   }, []);
 
   return (
-    <div className="p-4 space-y-4 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold">Civic Analytics Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Encroachment trends and enforcement insights</p>
+    <PageTransition>
+      <div className="p-4 space-y-4 max-w-7xl mx-auto">
+        <div>
+          <h1 className="text-xl font-bold">Civic Analytics Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Encroachment trends and enforcement insights</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard title="Total Cases" value={cases.length} icon={BarChart3} />
+          <StatCard title="Resolution Rate" value={`${Math.round((cases.filter(c => c.status === "Cleared").length / cases.length) * 100)}%`} icon={TrendingUp} colorClass="text-status-cleared" />
+          <StatCard title="Active Cases" value={cases.filter(c => c.status !== "Cleared").length} icon={Activity} colorClass="text-status-pending" />
+          <StatCard title="Categories" value={categories.length} icon={PieChartIcon} colorClass="text-status-scheduled" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="shadow-sm border-border/60">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Encroachments per Ward</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={wardData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,32%,91%)" />
+                  <XAxis dataKey="ward" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid hsl(214,32%,91%)" }} />
+                  <Bar dataKey="count" fill="hsl(220,60%,35%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-border/60">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Status Distribution</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                    {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-border/60">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Trends</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,32%,91%)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="reported" stroke="hsl(38,92%,50%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="cleared" stroke="hsl(142,71%,45%)" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-border/60">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Category Distribution</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={categoryData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                    {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard title="Total Cases" value={cases.length} icon={BarChart3} />
-        <StatCard title="Resolution Rate" value={`${Math.round((cases.filter(c => c.status === "Cleared").length / cases.length) * 100)}%`} icon={TrendingUp} colorClass="text-status-cleared" />
-        <StatCard title="Active Cases" value={cases.filter(c => c.status !== "Cleared").length} icon={Activity} colorClass="text-status-pending" />
-        <StatCard title="Categories" value={categories.length} icon={PieChartIcon} colorClass="text-status-scheduled" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Encroachments per Ward</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={wardData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="ward" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" fill="hsl(220,60%,35%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Status Distribution</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                  {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Trends</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="reported" stroke="hsl(38,92%,50%)" strokeWidth={2} />
-                <Line type="monotone" dataKey="cleared" stroke="hsl(142,71%,45%)" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Category Distribution</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                  {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    </PageTransition>
   );
 }
