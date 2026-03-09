@@ -106,6 +106,28 @@
   }
 }
 
+@layer components {
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-[1.02];
+  }
+
+  .page-section {
+    @apply opacity-0 animate-fade-in;
+  }
+
+  .page-section-delay-1 {
+    animation-delay: 0.1s;
+  }
+
+  .page-section-delay-2 {
+    animation-delay: 0.2s;
+  }
+
+  .page-section-delay-3 {
+    animation-delay: 0.3s;
+  }
+}
+
 .leaflet-container {
   height: 100%;
   width: 100%;

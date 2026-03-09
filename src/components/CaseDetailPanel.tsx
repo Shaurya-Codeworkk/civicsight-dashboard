@@ -3,6 +3,7 @@ import { CaseTimeline } from "./CaseTimeline";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 const statusColor: Record<string, string> = {
   Reported: "bg-status-reported text-primary-foreground",
@@ -18,7 +19,13 @@ interface CaseDetailPanelProps {
 
 export function CaseDetailPanel({ caseData, onClose }: CaseDetailPanelProps) {
   return (
-    <div className="w-96 bg-card border-l h-full overflow-y-auto p-4 space-y-4">
+    <motion.div
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      className="w-96 bg-card border-l h-full overflow-y-auto p-4 space-y-4 shadow-xl"
+    >
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-bold text-lg">{caseData.id}</h3>
@@ -29,7 +36,7 @@ export function CaseDetailPanel({ caseData, onClose }: CaseDetailPanelProps) {
         </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Badge className={statusColor[caseData.status]}>{caseData.status}</Badge>
         <Badge variant="outline">{caseData.category}</Badge>
         <Badge variant="outline">{caseData.ward}</Badge>
@@ -73,6 +80,6 @@ export function CaseDetailPanel({ caseData, onClose }: CaseDetailPanelProps) {
         <p className="text-xs font-medium text-muted-foreground mb-2">Case Timeline</p>
         <CaseTimeline events={caseData.timeline} />
       </div>
-    </div>
+    </motion.div>
   );
 }
