@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import "leaflet.heat";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { EncroachmentCase } from "@/data/mockData";
 
 // Fix default marker icons
@@ -39,9 +40,12 @@ function HeatmapLayer({ cases }: { cases: EncroachmentCase[] }) {
   const map = useMap();
 
   useEffect(() => {
+    if (!(L as any).heatLayer) {
+      console.warn("leaflet.heat plugin not available");
+      return;
+    }
     const points = cases.map((c) => [c.lat, c.lng, 0.8] as [number, number, number]);
-    // @ts-ignore - leaflet.heat types
-    const heat = L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 17 });
+    const heat = (L as any).heatLayer(points, { radius: 35, blur: 25, maxZoom: 17 });
     heat.addTo(map);
     return () => { map.removeLayer(heat); };
   }, [map, cases]);
