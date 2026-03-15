@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import "leaflet.heat";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { EncroachmentCase } from "@/data/mockData";
 
 // Fix default marker icons
