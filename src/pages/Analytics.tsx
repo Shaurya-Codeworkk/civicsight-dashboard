@@ -1,117 +1,122 @@
 import { useMemo } from "react";
-import { useCivic } from "@/context/CivicContext";
-import { wardNames, categories } from "@/data/mockData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/StatCard";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { BarChart3, TrendingUp, PieChart as PieChartIcon, Activity } from "lucide-react";
+import { useComplaints } from "@/context/ComplaintContext";
+import { computeAreaPerformance } from "@/data/mockData";
 import { PageTransition } from "@/components/PageTransition";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
-const COLORS = ["hsl(220,60%,35%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(280,65%,60%)", "hsl(0,84%,60%)"];
+const COLORS = [
+  "hsl(220, 60%, 35%)",
+  "hsl(142, 71%, 45%)",
+  "hsl(38, 92%, 50%)",
+  "hsl(280, 65%, 60%)",
+  "hsl(0, 84%, 60%)",
+];
 
 export default function Analytics() {
-  const { cases } = useCivic();
+  const { complaints } = useComplaints();
 
-  const wardData = useMemo(() =>
-    wardNames.map((w) => ({
-      ward: w,
-      count: cases.filter((c) => c.ward === w).length,
-    })), [cases]);
+  const areaData = useMemo(() => {
+    const map = new Map<string, number>();
+    complaints.forEach((c) => map.set(c.area, (map.get(c.area) || 0) + 1));
+    return Array.from(map.entries()).map(([area, count]) => ({ area, count })).sort((a, b) => b.count - a.count);
+  }, [complaints]);
 
   const statusData = useMemo(() => {
-    const s: Record<string, number> = { Pending: 0, Scheduled: 0, Cleared: 0, Reported: 0 };
-    cases.forEach((c) => s[c.status]++);
-    return Object.entries(s).map(([name, value]) => ({ name, value }));
-  }, [cases]);
+    const map = new Map<string, number>();
+    complaints.forEach((c) => map.set(c.status, (map.get(c.status) || 0) + 1));
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [complaints]);
 
-  const categoryData = useMemo(() =>
-    categories.map((cat) => ({
-      name: cat.split(" ").slice(0, 2).join(" "),
-      value: cases.filter((c) => c.category === cat).length,
-    })).filter((d) => d.value > 0), [cases]);
+  const priorityData = useMemo(() => {
+    const map = new Map<string, number>();
+    complaints.forEach((c) => map.set(c.priority, (map.get(c.priority) || 0) + 1));
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [complaints]);
 
-  const monthlyData = useMemo(() => {
-    const months = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
-    return months.map((m, i) => ({
-      month: m,
-      reported: Math.floor(Math.random() * 5) + 2 + i,
-      cleared: Math.floor(Math.random() * 3) + i,
-    }));
-  }, []);
+  const areaPerf = useMemo(() => computeAreaPerformance(complaints), [complaints]);
+
+  const riskColor: Record<string, string> = {
+    "Low Risk": "bg-status-cleared text-primary-foreground",
+    "Medium Risk": "bg-status-pending text-primary-foreground",
+    "High Encroachment Zone": "bg-status-reported text-primary-foreground",
+  };
 
   return (
     <PageTransition>
-      <div className="p-4 space-y-4 max-w-7xl mx-auto">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <div>
-          <h1 className="text-xl font-bold">Civic Analytics Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Encroachment trends and enforcement insights</p>
+          <h1 className="text-xl font-bold">Analytics Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Delhi encroachment data insights</p>
         </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard title="Total Cases" value={cases.length} icon={BarChart3} />
-          <StatCard title="Resolution Rate" value={`${Math.round((cases.filter(c => c.status === "Cleared").length / cases.length) * 100)}%`} icon={TrendingUp} colorClass="text-status-cleared" />
-          <StatCard title="Active Cases" value={cases.filter(c => c.status !== "Cleared").length} icon={Activity} colorClass="text-status-pending" />
-          <StatCard title="Categories" value={categories.length} icon={PieChartIcon} colorClass="text-status-scheduled" />
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Encroachments per Ward</CardTitle></CardHeader>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Cases by Area</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={wardData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,32%,91%)" />
-                  <XAxis dataKey="ward" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid hsl(214,32%,91%)" }} />
-                  <Bar dataKey="count" fill="hsl(220,60%,35%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={areaData}>
+                    <XAxis dataKey="area" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={60} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="hsl(220, 60%, 35%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-
-          <Card className="shadow-sm border-border/60">
+          <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Status Distribution</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                    {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Monthly Trends</CardTitle></CardHeader>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Priority Distribution</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,32%,91%)" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="reported" stroke="hsl(38,92%,50%)" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="cleared" stroke="hsl(142,71%,45%)" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={priorityData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      <Cell fill="hsl(0, 84%, 60%)" />
+                      <Cell fill="hsl(38, 92%, 50%)" />
+                      <Cell fill="hsl(142, 71%, 45%)" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Category Distribution</CardTitle></CardHeader>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Area Performance</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                    {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {areaPerf.map((a) => (
+                  <div key={a.area} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                    <div>
+                      <span className="text-sm font-medium">{a.area}</span>
+                      <div className="flex gap-2 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">{a.totalCases} cases</span>
+                        <span className="text-[10px] text-muted-foreground">{a.resolvedPercent}% resolved</span>
+                      </div>
+                    </div>
+                    <Badge className={`text-[10px] ${riskColor[a.riskLevel]}`}>{a.riskLevel}</Badge>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
