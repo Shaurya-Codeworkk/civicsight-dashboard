@@ -1,17 +1,15 @@
 import {
   LayoutDashboard,
   MapPin,
-  FileText,
   Shield,
-  Settings,
   BarChart3,
-  Trophy,
+  LogOut,
   Brain,
-  Satellite,
-  Flame,
+  User,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -22,36 +20,36 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-
-const mainItems = [
-  { title: "Command Center", url: "/", icon: LayoutDashboard },
-  { title: "Heatmap", url: "/heatmap", icon: Flame },
-  { title: "Report Encroachment", url: "/report", icon: MapPin },
-  { title: "Transparency Board", url: "/transparency", icon: Shield },
-  { title: "Case Manager", url: "/cases", icon: Settings },
-];
-
-const analyticsItems = [
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Ward Leaderboard", url: "/leaderboard", icon: Trophy },
-  { title: "AI Report", url: "/ai-report", icon: Brain },
-  { title: "Satellite Monitor", url: "/satellite", icon: Satellite },
-];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { user, logout } = useAuth();
 
-  const renderItems = (items: typeof mainItems) =>
+  const citizenItems = [
+    { title: "My Dashboard", url: "/citizen", icon: User },
+    { title: "Transparency", url: "/transparency", icon: Shield },
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  ];
+
+  const authorityItems = [
+    { title: "Command Center", url: "/command", icon: LayoutDashboard },
+    { title: "Transparency", url: "/transparency", icon: Shield },
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  ];
+
+  const items = user?.role === "citizen" ? citizenItems : authorityItems;
+
+  const renderItems = (items: typeof citizenItems) =>
     items.map((item) => (
       <SidebarMenuItem key={item.title}>
         <SidebarMenuButton asChild>
           <NavLink
             to={item.url}
-            end={item.url === "/"}
+            end={item.url === "/citizen" || item.url === "/command"}
             className="hover:bg-sidebar-accent/60"
             activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
           >
@@ -65,37 +63,48 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        {!collapsed && (
+        {!collapsed ? (
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-sm">
-              CS
+              <Brain className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-sidebar-foreground">CivicSight</h2>
-              <p className="text-[10px] text-sidebar-foreground/60">Encroachment Intelligence</p>
+              <h2 className="text-sm font-bold text-sidebar-foreground">ENCROACH-AI</h2>
+              <p className="text-[10px] text-sidebar-foreground/60">Civic Intelligence</p>
             </div>
           </div>
-        )}
-        {collapsed && (
+        ) : (
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-sm mx-auto">
-            CS
+            <Brain className="h-4 w-4" />
           </div>
         )}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {user?.role === "citizen" ? "Citizen Portal" : "Authority"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(mainItems)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Intelligence</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{renderItems(analyticsItems)}</SidebarMenu>
+            <SidebarMenu>{renderItems(items)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-3">
+        {!collapsed && (
+          <div className="text-[10px] text-sidebar-foreground/50 mb-2 px-1">
+            {user?.email}
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          onClick={logout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          {!collapsed && "Sign Out"}
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
 }
